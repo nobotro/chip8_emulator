@@ -93,6 +93,7 @@ class chip8():
             # get opcode
             self.opcode = self.ram[self.pc_register] << 8 | self.ram[self.pc_register + 1]
 
+
             # incress current executing adress
             self.pc_register += 2
 
@@ -135,7 +136,7 @@ class chip8():
             The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
         '''
 
-        x=self.opcode & 0x0F00
+        x=(self.opcode & 0x0F00)>>8
         kk=self.opcode & 0x00FF
         if self.v_registers[x]==kk: self.pc_register+=2
 
@@ -144,7 +145,7 @@ class chip8():
         '''4xkk - SNE Vx, byte
         Skip next instruction if Vx != kk.
         The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.'''
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00)>>8
         kk = self.opcode & 0x00FF
         if self.v_registers[x] != kk: self.pc_register += 2
 
@@ -153,8 +154,8 @@ class chip8():
         Skip next instruction if Vx = Vy.
         The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
         '''
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00)>>8
+        y = (self.opcode & 0x00F0)>>4
         if self.v_registers[x]==self.v_registers[y]:self.pc_register+=2
 
     def _6xkk(self):
@@ -162,7 +163,7 @@ class chip8():
         Set Vx = kk.
         The interpreter puts the value kk into register Vx.'''
 
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00) >> 8
         kk=self.opcode & 0x00FF
 
         self.v_registers[x]=kk
@@ -173,7 +174,7 @@ class chip8():
         Set Vx = Vx + kk.
         Adds the value kk to the value of register Vx, then stores the result in Vx.
         '''
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00) >> 8
         kk = self.opcode & 0x00FF
         self.v_registers[x] += kk
 
@@ -182,8 +183,8 @@ class chip8():
         Set Vx = Vy.
         Stores the value of register Vy in register Vx.'''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0)>>4
         self.v_registers[x]=self.v_registers[y]
 
 
@@ -194,8 +195,8 @@ class chip8():
         A bitwise OR compares the corrseponding bits from two values, and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0.
         '''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
 
         self.v_registers[x]=self.v_registers[x] | self.v_registers[y]
 
@@ -207,8 +208,8 @@ class chip8():
         A bitwise AND compares the corrseponding bits from two values, and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
         '''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
 
         self.v_registers[x] = self.v_registers[x] & self.v_registers[y]
 
@@ -221,8 +222,8 @@ class chip8():
         then the corresponding bit in the result is set to 1. Otherwise, it is 0.
         '''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
 
         self.v_registers[x] = self.v_registers[x] ^ self.v_registers[y]
 
@@ -234,9 +235,8 @@ class chip8():
         VF is set to 1, otherwise 0. Only the lowest 8 bits of the result are kept, and stored in Vx.
         '''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
-
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
         if self.v_registers[x] + self.v_registers[y]>255:
             self.vf_register=1
         else:
@@ -249,8 +249,8 @@ class chip8():
         If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx, and the results stored in Vx.
         '''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
 
         if self.v_registers[x] > self.v_registers[y]:
             self.vf_register = 1
@@ -265,8 +265,8 @@ class chip8():
         If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
         '''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
 
         if self.v_registers[x] & 0b00000001:
             self.vf_register=1
@@ -282,8 +282,8 @@ class chip8():
         If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
         '''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
 
         if self.v_registers[y]>self.v_registers[x]:
             self.vf_register=1
@@ -292,21 +292,20 @@ class chip8():
 
         self.v_registers[y] -= self.v_registers[x]
 
-    def f(self):
+    def _8xyE(self):
         '''8xyE - SHL Vx {, Vy}
         Set Vx = Vx SHL 1.
         If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
         '''
 
-
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
 
         if self.v_registers[x] & 0b10000000:
             self.vf_register=1
         else:self.vf_register=0
 
-        self.self.v_registers[x]*=2
+        self.v_registers[x]*=2
 
 
     def _9xy0(self):
@@ -314,13 +313,15 @@ class chip8():
         Skip next instruction if Vx != Vy.
         The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.'''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
+
+
         if x!=y:
             self.pc_register+=2
 
 
-    def Annn(self):
+    def _Annn(self):
         '''Annn - LD I, addr
         Set I = nnn.
         The value of register I is set to nnn.'''
@@ -329,7 +330,7 @@ class chip8():
         self.i_register=nnn
 
 
-    def f(self):
+    def _Bnnn(self):
         '''Bnnn - JP V0, addr
         Jump to location nnn + V0.
         The program counter is set to nnn plus the value of V0.'''
@@ -345,7 +346,7 @@ class chip8():
         which is then ANDed with the value kk.
         The results are stored in Vx. See instruction 8xy2 for more information on AND.'''
 
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00)>>8
         kk=self.opcode & 0x00FF
         rand=random.randint(0, 255)
         self.v_registers[x]=kk & rand
@@ -362,8 +363,8 @@ class chip8():
          If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen.
          See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.'''
 
-        x = self.opcode & 0x0F00
-        y = self.opcode & 0x00F0
+        x = (self.opcode & 0x0F00) >> 8
+        y = (self.opcode & 0x00F0) >> 4
         n = self.opcode & 0x000F
         sprite=self.ram[self.i_register:self.i_register+n] # 8 bit width ,len(sprites) height
 
@@ -386,12 +387,14 @@ class chip8():
 
 
     def _Ex9E(self):
-        '''Ex9E - SKP Vx
+        '''
+
+        Ex9E - SKP Vx
         Skip next instruction if key with the value of Vx is pressed.
         Checks the keyboard, and if the key corresponding to the value of Vx is
         currently in the down position, PC is increased by 2.'''
 
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00)>>8
 
         if self.keyboard[self.v_register[x]]:
             self.pc_register+=2
@@ -405,7 +408,7 @@ class chip8():
         PC is increased by 2.
         '''
 
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00) >> 8
 
         if self.keyboard[self.v_register[x]]:
             self.pc_register += 2
@@ -419,14 +422,15 @@ class chip8():
         Fx07 - LD Vx, DT
         Set Vx = delay timer value.
         The value of DT is placed into Vx'''
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00) >> 8
+
         self.v_registers[x]=self.delay_register
 
     def _Fx0A(self):
         '''Fx0A - LD Vx, K
         Wait for a key press, store the value of the key in Vx.
         All execution stops until a key is pressed, then the value of that key is stored in Vx.'''
-        x = self.opcode & 0x0F00
+        x = (self.opcode & 0x0F00) >> 8
         cur_state=self.keyboard
         while True:
             for i in self.keyboard:
@@ -435,31 +439,100 @@ class chip8():
                     break
 
     def _Fx15(self):
-        x = self.opcode & 0x0F00
+        '''
+        Set delay timer = Vx.
+
+        DT is set equal to the value of Vx.
+        '''
+
+        x = (self.opcode & 0x0F00) >> 8
         self.delay_register=self.v_registers[x]
 
 
     def _Fx18(self):
-        x = self.opcode & 0x0F00
+
+        '''
+        Set sound timer = Vx.
+
+        ST is set equal to the value of Vx.
+
+        '''
+
+        x = (self.opcode & 0x0F00) >> 8
         self.sound_register = self.v_registers[x]
 
 
     def _Fx1E(self):
-        x = self.opcode & 0x0F00
+        '''
+        Set I = I + Vx.
+
+        The values of I and Vx are added, and the results are stored in I.'''
+
+        x = (self.opcode & 0x0F00) >> 8
         self.i_register=self.i_register+self.v_registers[x]
 
 
     def _Fx29(self):
-        x = self.opcode & 0x0F00
+
+        '''
+
+        Set I = location of sprite for digit Vx.
+
+        The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
+        See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
+
+        '''
+        x = (self.opcode & 0x0F00) >> 8
 
         self.i_register=self.ram[self.v_registers[x]*5]
 
 
     def _Fx33(self):
 
-        x = self.opcode & 0x0F00
-        self.v_registers[x]
+        '''Store BCD representation of Vx in memory locations I, I+1, and I+2.
 
+        The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I
+        , the tens digit at location I+1, and the ones digit at location I+2.
+        '''
+
+        x = (self.opcode & 0x0F00) >> 8
+
+        hundred=x//100
+        ten=(x-(hundred*100))//10
+        one=(x-(hundred*100)-(ten*10))
+        self.ram[self.i_register]=hundred
+        self.ram[self.i_register+1]=ten
+        self.ram[self.i_register+2]=one
+
+    def _Fx55(self):
+
+        '''
+        Store registers V0 through Vx in memory starting at location I.
+
+        The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+
+        '''
+
+        x= (self.opcode & 0x0F00) >> 8
+
+        for val in range(x+1):
+            self.ram[self.i_register+val]=self.v_registers[val]
+
+
+    def _Fx65(self):
+
+        '''
+
+        Read registers V0 through Vx from memory starting at location I.
+
+        The interpreter reads values from memory starting at location I into registers V0 through Vx.
+        '''
+
+        x = (self.opcode & 0x0F00) >> 8
+
+        for val in range(x + 1):
+
+            self.v_registers[val]=self.ram[self.i_register + val]
 
 
 
