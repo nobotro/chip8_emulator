@@ -1,13 +1,16 @@
 import random
 import time
 
+import pygame
+from pygame.rect import Rect
+
 
 class chip8():
     ram = [0] * 4096  # ram for chip8
     rom_load_addres = 0x200  # chip-8 program start from that adress
 
-    v_registers = [0] * 15  # v registers
-    vf_register = 0  # instruction flag
+    v_registers = [0] * 16 # v registers
+
 
     i_register = 0  # memory register,stores memory adress,last 12 bit used
 
@@ -15,8 +18,6 @@ class chip8():
     sound_register = 0  # When these registers are non-zero, they are automatically decremented at a rate of 60Hz
 
     pc_register = 0  # stores currently executing adress
-
-    sp = 0  # stack pointer,it is used to point to the topmost level of the stack.
 
     stack = [0] * 16  # used to store the address that the interpreter shoud return to when finished with a subroutine.
     # Chip-8 allows for up to 16 levels of nested subroutines.(16 nested returns)
@@ -35,25 +36,23 @@ class chip8():
 
     display = [0] * 64 * 32  # 64x32-pixel monochrome display
 
-    font = [
-
-        0xF0, 0x90, 0x90, 0x90, 0xF0,  # 0
-        0x20, 0x60, 0x20, 0x20, 0x70,  # 1
-        0xF0, 0x10, 0xF0, 0x80, 0xF0,  # 2
-        0xF0, 0xF10, 0xF0, 0x10, 0xF0,  # 3
-        0x90, 0x90, 0xF0, 0x10, 0x10,  # 4
-        0xF0, 0x80, 0xF0, 0x10, 0xF0,  # 5
-        0xF0, 0x80, 0xF0, 0x90, 0xF0,  # 6
-        0xF0, 0x10, 0x20, 0x40, 0x40,  # 7
-        0xF0, 0x90, 0xF0, 0x90, 0xF0,  # 8
-        0xF0, 0x90, 0xF0, 0x10, 0xF0,  # 9
-        0xF0, 0x90, 0xF0, 0x90, 0x90,  # A
-        0xE0, 0x90, 0xE0, 0x90, 0xE0,  # B
-        0xF0, 0x80, 0x80, 0x80, 0xF0,  # C
-        0xE0, 0x90, 0x90, 0x90, 0xE0,  # D
-        0xF0, 0x80, 0xF0, 0x80, 0xF0,  # E
-        0xF0, 0x80, 0xF0, 0x80, 0x80  # F
-
+    ram[0x0: 0x50] = [
+        0xF0, 0x90, 0x90, 0x90, 0xF0,
+        0x20, 0x60, 0x20, 0x20, 0x70,
+        0xF0, 0x10, 0xF0, 0x80, 0xF0,
+        0xF0, 0x10, 0xF0, 0x10, 0xF0,
+        0x90, 0x90, 0xF0, 0x10, 0x10,
+        0xF0, 0x80, 0xF0, 0x10, 0xF0,
+        0xF0, 0x80, 0xF0, 0x90, 0xF0,
+        0xF0, 0x10, 0x20, 0x40, 0x40,
+        0xF0, 0x90, 0xF0, 0x90, 0xF0,
+        0xF0, 0x90, 0xF0, 0x10, 0xF0,
+        0xF0, 0x90, 0xF0, 0x90, 0x90,
+        0xE0, 0x90, 0xE0, 0x90, 0xE0,
+        0xF0, 0x80, 0x80, 0x80, 0xF0,
+        0xE0, 0x90, 0x90, 0x90, 0xE0,
+        0xF0, 0x80, 0xF0, 0x80, 0xF0,
+        0xF0, 0x80, 0xF0, 0x80, 0x80
     ]
 
     def del_sound_timer(self):
@@ -66,8 +65,8 @@ class chip8():
             #stop buzzing
 
 
-        time.sleep(
-            0.016)  # 60hz 1 decrement in 16 microseconds (1000/60)
+        # time.sleep(
+        #     0.016)  # 60hz 1 decrement in 16 microseconds (1000/60)
 
 
     def load_rom(self, path):
@@ -79,30 +78,41 @@ class chip8():
         for i in range(rom_size):
             self.ram[i + self.rom_load_addres] = rom_bytes[i]
 
-        # load fonts
-        i = 0
-        while i < len(self.font):
-            self.ram[i] = self.font[i]
+
+
 
     def exop(self,opcode):
 
+
+
         f = (self.opcode & 0xF000) >> 12
-        if f == 8 or f == 0 or f == 14:
 
-            l = self.opcode & 0x000F
-            eval(hex(f)[2:].upper() + hex(l)[2:].upper() + '()')
-        elif f == 15:
-            l = self.opcode & 0x000F
-            ll = (self.opcode & 0x00F0) >> 8
+        try:
+            if f == 8 or f == 0 or f == 14:
 
-            eval(hex(f)[2:].upper() + hex(ll)[2:].upper() + hex(l)[2:].upper() + '()')
+                l = self.opcode & 0x000F
+                eval('self._'+hex(f)[2:].upper() + hex(l)[2:].upper() + '()')
+            elif f == 15:
+                l = self.opcode & 0x000F
+                ll = (self.opcode & 0x00F0) >> 4
+
+                eval('self._'+hex(f)[2:].upper() + hex(ll)[2:].upper() + hex(l)[2:].upper() + '()')
 
 
-        else:
-            eval(hex(f)[2:].upper() + '()')
+            else:
+                eval('self._'+hex(f)[2:].upper() + '()')
+        except Exception as e:
+                print('error in  :'+hex(self.opcode)+' '+str(e))
+
+        # print('executing '+hex(opcode)+' '+str(self.v_registers)+' ram '+str(self.ram[754 :757])+ ' ireg:'+str(self.i_register) )
+
 
     def run_cycle(self):
         self.pc_register = self.rom_load_addres
+        screen = pygame.display.set_mode((640, 320))
+
+        background = pygame.Surface(screen.get_size())
+        background = background.convert()
 
         while True:
             self.del_sound_timer()
@@ -110,14 +120,44 @@ class chip8():
             # get opcode
             self.opcode = self.ram[self.pc_register] << 8 | self.ram[self.pc_register + 1]
 
+            self.pc_register = (self.pc_register + 2)
 
-
-
-
-            # incress current executing adress
-            self.pc_register += 2
 
             self.exop(self.opcode)
+            # incress current executing adress
+
+            events = pygame.event.get()
+            for event in events:
+                if event.type == pygame.KEYDOWN:
+                    print(event.key)
+                    if event.key == pygame.K_LEFT:
+                        self.keyboard[12]=1
+                    if event.key == pygame.K_LEFT:
+                        self.keyboard[1]=1
+                if event.type==pygame.KEYUP:
+                    print(event.key)
+                    if event.key == pygame.K_LEFT:
+                        self.keyboard[12]=0
+                    if event.key == pygame.K_LEFT:
+                        self.keyboard[1]=0
+
+
+
+            background.fill((0, 0, 0))
+            for x in range(64):
+                for y in range(32):
+                    if self.get(x, y):
+                        pixel = Rect(x * 10, y * 10, 10, 10)
+                        pygame.draw.rect(background, (255, 255, 255), pixel)
+
+            screen.blit(background, background.get_rect())
+
+            pygame.display.update()
+
+
+
+
+
 
     # exevuting operations
 
@@ -133,7 +173,7 @@ class chip8():
         The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.'''
 
         self.pc_register = self.stack.pop()
-        self.sp -= 1
+
 
     def _1(self):
         ''' 1nnn - JP addr
@@ -148,7 +188,7 @@ class chip8():
         The interpreter increments the stack pointer, then puts the current PC on the top of the stack. The PC is then set to nnn.
         '''
 
-        self.sp += 1
+
         self.stack.append(self.pc_register)
         self.pc_register = self.opcode & 0x0FFF
 
@@ -160,6 +200,7 @@ class chip8():
 
         x=(self.opcode & 0x0F00)>>8
         kk=self.opcode & 0x00FF
+
         if self.v_registers[x]==kk: self.pc_register+=2
 
     def _4(self):
@@ -185,6 +226,7 @@ class chip8():
         Set Vx = kk.
         The interpreter puts the value kk into register Vx.'''
 
+
         x = (self.opcode & 0x0F00) >> 8
         kk=self.opcode & 0x00FF
 
@@ -198,7 +240,7 @@ class chip8():
         '''
         x = (self.opcode & 0x0F00) >> 8
         kk = self.opcode & 0x00FF
-        self.v_registers[x] += kk
+        self.v_registers[x] =  self.v_registers[x] + kk
 
     def _80(self):
         '''8xy0 - LD Vx, Vy
@@ -208,7 +250,7 @@ class chip8():
         x = (self.opcode & 0x0F00) >> 8
         y = (self.opcode & 0x00F0)>>4
         self.v_registers[x]=self.v_registers[y]
-
+        self.v_registers[x] &= 0xff
 
     def _81(self):
         '''8xy1 - OR Vx, Vy
@@ -221,6 +263,7 @@ class chip8():
         y = (self.opcode & 0x00F0) >> 4
 
         self.v_registers[x]=self.v_registers[x] | self.v_registers[y]
+        self.v_registers[x] &= 0xff
 
 
     def _82(self):
@@ -234,7 +277,7 @@ class chip8():
         y = (self.opcode & 0x00F0) >> 4
 
         self.v_registers[x] = self.v_registers[x] & self.v_registers[y]
-
+        self.v_registers[x] &= 0xff
 
     def _83(self):
         '''8xy3 - XOR Vx, Vy
@@ -248,6 +291,7 @@ class chip8():
         y = (self.opcode & 0x00F0) >> 4
 
         self.v_registers[x] = self.v_registers[x] ^ self.v_registers[y]
+        self.v_registers[x] &= 0xff
 
 
     def _84(self):
@@ -260,9 +304,11 @@ class chip8():
         x = (self.opcode & 0x0F00) >> 8
         y = (self.opcode & 0x00F0) >> 4
         if self.v_registers[x] + self.v_registers[y]>255:
-            self.vf_register=1
+            self.v_registers[15]=1
         else:
-            self.vf_register=0
+            self.v_registers[15]=0
+        self.v_registers[x]=(self.v_registers[x]+self.v_registers[y])
+        self.v_registers[x] &= 0xff
 
 
     def _85(self):
@@ -275,12 +321,12 @@ class chip8():
         y = (self.opcode & 0x00F0) >> 4
 
         if self.v_registers[x] > self.v_registers[y]:
-            self.vf_register = 1
+            self.v_registers[15]=1
         else:
-            self.vf_register = 0
+            self.v_registers[15]=0
 
-        self.v_registers[x] -= self.v_registers[y]
-
+        self.v_registers[x] = (self.v_registers[x] - self.v_registers[y])
+        self.v_registers[x] &= 0xff
 
     def _86(self):
         '''8xy6 - SHR Vx {, Vy} Set Vx = Vx SHR 1.
@@ -290,11 +336,11 @@ class chip8():
         x = (self.opcode & 0x0F00) >> 8
         y = (self.opcode & 0x00F0) >> 4
 
-        if self.v_registers[x] & 0b00000001:
-            self.vf_register=1
-        else:self.vf_register=0
 
-        self.v_registers[x] /= 2
+        self.v_registers[15] = self.v_registers[x] & 1
+
+        self.v_registers[x] = self.v_registers[y] >> 1
+        self.v_registers[x] &= 0xff
 
 
 
@@ -308,12 +354,12 @@ class chip8():
         y = (self.opcode & 0x00F0) >> 4
 
         if self.v_registers[y]>self.v_registers[x]:
-            self.vf_register=1
+            self.v_registers[15]=1
         else:
-            self.vf_register=0
+            self.v_registers[15]=0
 
-        self.v_registers[y] -= self.v_registers[x]
-
+        self.v_registers[x]=self.v_registers[y] - self.v_registers[x]
+        self.v_registers[x] &= 0xff
     def _8E(self):
         '''8xyE - SHL Vx {, Vy}
         Set Vx = Vx SHL 1.
@@ -323,12 +369,11 @@ class chip8():
         x = (self.opcode & 0x0F00) >> 8
         y = (self.opcode & 0x00F0) >> 4
 
-        if self.v_registers[x] & 0b10000000:
-            self.vf_register=1
-        else:self.vf_register=0
 
-        self.v_registers[x]*=2
+        self.v_registers[15] = self.v_registers[y] >> 7
 
+        self.v_registers[x] = (self.v_registers[y] << 1)
+        self.v_registers[x] &= 0xff
 
     def _9(self):
         '''9xy0 - SNE Vx, Vy
@@ -372,6 +417,15 @@ class chip8():
         kk=self.opcode & 0x00FF
         rand=random.randint(0, 255)
         self.v_registers[x]=kk & rand
+        self.v_registers[x] &= 0xff
+
+
+
+    def _index(self, x, y):
+        return (y * 64) + x
+
+    def get(self, x, y):
+        return self.display[self._index(x, y)]
 
 
     def _D(self):
@@ -385,27 +439,44 @@ class chip8():
          If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen.
          See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.'''
 
-        x = (self.opcode & 0x0F00) >> 8
-        y = (self.opcode & 0x00F0) >> 4
+
+        self.draw_flag = True
+
+        x = self.v_registers[(self.opcode & 0x0F00) >> 8]
+        y = self.v_registers[(self.opcode & 0x00F0) >> 4]
         n = self.opcode & 0x000F
-        sprite=self.ram[self.i_register:self.i_register+n] # 8 bit width ,len(sprites) height
+        sprites = self.ram[self.i_register:self.i_register + n]  # 8 bit width ,len(sprites) height
 
-        for i in range(len(sprite)):
+        self.v_registers[15]=0
 
-            xx=0
-            while xx<8:
-                if i + y >= 32 or xx + 8 >= 64: continue
+        for i, sprite in enumerate(sprites):
 
-                self.display[x+xx+64*(y+i)]^=(sprite[i] & 0xFF>>xx)
+            pixels = [int(k) for k in bin(sprite)[2:]]
+
+            pll=len(pixels)
+            if pll<8:
+                for aa in range(8-pll):pixels.insert(0,0)
+
+
+            for pl in range(pll):
+
+                  if x + pl>=64 or y+i>=32:
+                      continue
 
 
 
-                if self.display[x+xx+64*(y+i)]:
-                    self.vf_register=0
-                else:
-                    self.vf_register=1
-                xx += 1
+                  old=self.display[x + (y * 64) + pl]
 
+
+                  self.display[x + (y * 64) + pl] = self.display[x + (y * 64) + pl] ^ pixels[pl]
+                  if old==1 and self.display[x + (y * 64) + pl]==0:
+                      self.v_registers[0xF] |= 1
+                  else:
+                      self.v_registers[15] |= 0
+
+            y +=1
+        #     if self.v_registers[15]:
+        #         print('*************8crash')
 
 
     def _EE(self):
@@ -418,7 +489,7 @@ class chip8():
 
         x = (self.opcode & 0x0F00)>>8
 
-        if self.keyboard[self.v_register[x]]:
+        if self.keyboard[self.v_registers[x]&0xf]==1:
             self.pc_register+=2
 
 
@@ -432,7 +503,8 @@ class chip8():
 
         x = (self.opcode & 0x0F00) >> 8
 
-        if self.keyboard[self.v_register[x]]:
+        if self.keyboard[self.v_registers[x]&0xf]==0:
+
             self.pc_register += 2
 
 
@@ -449,6 +521,8 @@ class chip8():
         self.v_registers[x]=self.delay_register
 
     def _F0A(self):
+
+        print('dgdgdggdgdg')
         '''Fx0A - LD Vx, K
         Wait for a key press, store the value of the key in Vx.
         All execution stops until a key is pressed, then the value of that key is stored in Vx.'''
@@ -506,7 +580,11 @@ class chip8():
         '''
         x = (self.opcode & 0x0F00) >> 8
 
-        self.i_register=self.ram[self.v_registers[x]*5]
+
+
+
+        self.i_register= self.v_registers[x]*5
+
 
 
     def _F33(self):
@@ -517,7 +595,7 @@ class chip8():
         , the tens digit at location I+1, and the ones digit at location I+2.
         '''
 
-        x = (self.opcode & 0x0F00) >> 8
+        x = self.v_registers[(self.opcode & 0x0F00) >> 8]
 
         hundred=x//100
         ten=(x-(hundred*100))//10
@@ -555,6 +633,9 @@ class chip8():
         for val in range(x + 1):
 
             self.v_registers[val]=self.ram[self.i_register + val]
+
+
+
 
 
 
